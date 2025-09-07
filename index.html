@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Supreme Shop — Demo E‑commerce</title>
+  <!-- GSAP -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--accent:#0ea5a4;--bg:#0f172a;--card:#0b1220;--muted:#94a3b8}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#0b1220 0%, #071029 100%);color:#e6eef8;margin:0;min-height:100vh}
+    .container{max-width:1200px;margin:0 auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;color:#02111a}
+    nav{display:flex;gap:12px;align-items:center}
+    .search{position:relative}
+    input[type=search]{padding:10px 14px;border-radius:10px;border:0;min-width:280px}
+    .actions{display:flex;gap:8px;align-items:center}
+    button{background:var(--accent);border:0;padding:10px 12px;border-radius:8px;color:#02111a;font-weight:600;cursor:pointer}
+    .ghost{background:transparent;border:1px solid rgba(255,255,255,.06);color:#e6eef8}
+
+    /* hero */
+    .hero{display:grid;grid-template-columns:1fr 420px;gap:30px;align-items:center;padding:28px 0}
+    .hero-card{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);padding:28px;border-radius:16px}
+    .hero h1{margin:0;font-size:32px}
+    .hero p{color:var(--muted)}
+
+    /* categories */
+    .cats{display:flex;gap:10px;margin:20px 0;flex-wrap:wrap}
+    .cat{padding:10px 14px;background:rgba(255,255,255,.03);border-radius:10px;cursor:pointer}
+
+    /* grid */
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);padding:12px;border-radius:14px;position:relative}
+    .card img{width:100%;height:160px;object-fit:cover;border-radius:10px}
+    .card h3{margin:10px 0 4px;font-size:16px}
+    .price{display:flex;justify-content:space-between;align-items:center}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* product modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px;z-index:80}
+    .modal{background:#041022;padding:18px;border-radius:12px;max-width:900px;width:100;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .thumbs{display:flex;gap:8px;flex-direction:column}
+    .thumbs img{width:60px;height:60px;object-fit:cover;border-radius:8px;cursor:pointer}
+    .big{width:100%;height:420px;object-fit:cover;border-radius:10px}
+
+    /* cart */
+    .cart-drawer{position:fixed;right:18px;top:70px;width:360px;background:#071029;padding:12px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.6);z-index:70}
+    .cart-item{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.03)}
+    .qty{display:flex;gap:6px;align-items:center}
+    .small{font-size:13px}
+
+    footer{padding:40px 0;color:var(--muted)}
+
+    /* responsive */
+    @media (max-width:900px){.hero{grid-template-columns:1fr}.modal{grid-template-columns:1fr}.container{padding:12px}.search input{min-width:120px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">SS</div>
+        <div>
+          <div style="font-weight:700">SHOPIFY</div>
+          <div class="muted" style="font-size:12px">Best Store</div>
+        </div>
+      </div>
+      <nav>
+        <div class="search">
+          <input id="search" type="search" placeholder="Search products, e.g. headphones" />
+        </div>
+        <div class="actions">
+          <button id="wishlistBtn" class="ghost">Wishlist (<span id="wishCount">0</span>)</button>
+          <button id="cartBtn">Cart (<span id="cartCount">0</span>)</button>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-card">
+          <h1>Shop the Collection</h1>
+        
+          <div style="margin-top:18px" class="cats" id="categories"></div>
+
+          <div style="margin-top:18px;display:flex;gap:10px">
+            <select id="sort">
+              <option value="default">Sort: Popular</option>
+              <option value="price-asc">Price — Low to High</option>
+              <option value="price-desc">Price — High to Low</option>
+              <option value="newest">Newest</option>
+            </select>
+            <select id="filter">
+              <option value="all">All</option>
+              <option value="electronics">Electronics</option>
+              <option value="fashion">Fashion</option>
+              <option value="home">Home</option>
+            </select>
+          </div>
+        </div>
+
+        <aside style="text-align:center">
+          <div style="background:linear-gradient(180deg,#052233,#033042);padding:16px;border-radius:12px">
+            <h3 style="margin:0">Limited Offer</h3>
+            <p class="muted">Free shipping on orders over ₹999</p>
+            <button style="margin-top:8px">Shop Offers</button>
+          </div>
+
+          <div style="margin-top:18px;background:linear-gradient(180deg,#062836,#052639);padding:12px;border-radius:12px">
+            <h4 style="margin:0">Your Cart Summary</h4>
+            <div id="miniSummary" class="muted small" style="margin-top:8px">0 items — ₹0</div>
+            <button id="checkoutBtn" class="ghost" style="margin-top:8px">Checkout</button>
+          </div>
+        </aside>
+      </section>
+
+      <section>
+        <h2 style="margin-top:6px">Products</h2>
+        <div id="productGrid" class="grid"></div>
+      </section>
+
+    </main>
+
+    <footer>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+       <div>© 2025 Supreme Shop. Owned by Nilesh Bagade • Powered by Shopify</div>
+        <div class="muted">Privacy • Terms • Returns</div>
+
+      </div>
+    </footer>
+  </div>
+
+  <!-- cart drawer -->
+  <div id="cartDrawer" class="cart-drawer" style="display:none"></div>
+
+  <!-- product modal -->
+  <div id="productOverlay" style="display:none" class="overlay"></div>
+
+  <!-- checkout modal -->
+  <div id="checkoutOverlay" style="display:none" class="overlay"></div>
+
+  <script>
+   const products = [
+  {id:1,title:'Wireless Headphones',category:'electronics',price:2499,desc:'Noise-cancelling over-ear headphones',img:'headphone.jpg'},
+  {id:2,title:'Classic Leather Jacket',category:'fashion',price:7999,desc:'Genuine leather, slim fit',img:'jacket.jpg'},
+  {id:3,title:'Ceramic Vase',category:'home',price:699,desc:'Handmade ceramic vase',img:'vase.jpg'},
+  {id:4,title:'Smart Watch',category:'electronics',price:4999,desc:'Fitness & notification features',img:'watch.jpg'},
+  {id:5,title:'Sneakers',category:'fashion',price:2999,desc:'Lightweight running sneakers',img:'shoe.jpg'},
+  {id:6,title:'Desk Lamp',category:'home',price:1299,desc:'Adjustable LED desk lamp',img:'lamp.jpg'},
+  // add more products with your own images
+];
+
+
+    // state
+    let state = {
+      products: [...products],
+      cart: JSON.parse(localStorage.getItem('cart')||'[]'),
+      wishlist: JSON.parse(localStorage.getItem('wishlist')||'[]')
+    };
+
+    const productGrid = document.getElementById('productGrid');
+    const cartCount = document.getElementById('cartCount');
+    const wishCount = document.getElementById('wishCount');
+    const miniSummary = document.getElementById('miniSummary');
+
+    // render categories
+    const categoriesEl = document.getElementById('categories');
+    const cats = ['All','electronics','fashion','home'];
+    cats.forEach(c=>{
+      const el = document.createElement('div');el.className='cat';el.textContent=c[0].toUpperCase()+c.slice(1);el.dataset.cat=c.toLowerCase();
+      el.addEventListener('click',()=>{document.getElementById('filter').value = el.dataset.cat==='all'?'all':el.dataset.cat; applyFilters();});
+      categoriesEl.appendChild(el);
+    });
+
+    function currency(n){return '₹'+n.toLocaleString('en-IN')}
+
+    function renderProducts(list){
+      productGrid.innerHTML='';
+      list.forEach(p=>{
+        const card = document.createElement('div');card.className='card';
+        card.innerHTML=`
+          <img src="${p.img}" alt="${p.title}" loading="lazy">
+          <h3>${p.title}</h3>
+          <div class="muted">${p.desc}</div>
+          <div class="price"><div><strong>${currency(p.price)}</strong></div><div><button class='ghost small view' data-id='${p.id}'>View</button> <button class='add small' data-id='${p.id}'>Add</button></div></div>
+        `;
+        productGrid.appendChild(card);
+      });
+
+      // micro-animate cards with GSAP
+      gsap.from('.card',{opacity:0,y:20,duration:0.6,stagger:0.06,delay:0.05});
+
+      // attach listeners
+      document.querySelectorAll('.add').forEach(b=>b.onclick=e=>{addToCart(+e.target.dataset.id)});
+      document.querySelectorAll('.view').forEach(b=>b.onclick=e=>{openProduct(+e.target.dataset.id)});
+    }
+
+    function openProduct(id){
+      const p = products.find(x=>x.id===id);
+      const overlay = document.getElementById('productOverlay');
+      overlay.style.display='flex';
+      overlay.innerHTML = `
+        <div class="modal">
+          <div>
+            <img class='big' src='${p.img}' alt='${p.title}'>
+          </div>
+          <div>
+            <h2>${p.title}</h2>
+            <div class='muted'>${p.category}</div>
+            <p class='muted'>${p.desc}</p>
+            <h3 style='margin-top:6px'>${currency(p.price)}</h3>
+            <div style='margin-top:10px;display:flex;gap:8px'>
+              <button id='buyNow'>Buy Now</button>
+              <button id='addWish' class='ghost'>Add to Wishlist</button>
+              <button id='closeModal' class='ghost'>Close</button>
+            </div>
+            <hr style='margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,.03)'>
+            <div class='muted small'>Customers also bought</div>
+            <div id='reco' style='display:flex;gap:8px;margin-top:8px'></div>
+          </div>
+        </div>
+      `;
+
+      // populate recommendations
+      const recoEl = overlay.querySelector('#reco');
+      const pool = products.filter(x=>x.id!==p.id).slice(0,3);
+      pool.forEach(r=>{const d=document.createElement('div');d.style.fontSize='13px';d.innerHTML=`<img src='${r.img}' style='width:56px;height:56px;object-fit:cover;border-radius:6px;margin-right:6px;vertical-align:middle'> ${r.title}`;recoEl.appendChild(d)});
+
+      // gsap modal animation
+      gsap.from('.modal',{scale:0.96,opacity:0,duration:0.35});
+
+      overlay.querySelector('#closeModal').onclick = ()=>overlay.style.display='none';
+      overlay.querySelector('#addWish').onclick = ()=>{ toggleWishlist(p.id); overlay.style.display='none' };
+      overlay.querySelector('#buyNow').onclick = ()=>{ addToCart(p.id); overlay.style.display='none'; openCart(); };
+    }
+
+    function addToCart(id){
+      const item = state.cart.find(i=>i.id===id);
+      if(item) item.qty++;
+      else state.cart.push({id,qty:1});
+      saveState();
+      toast('Added to cart');
+      renderCart();
+    }
+
+    function toggleWishlist(id){
+      const idx = state.wishlist.indexOf(id);
+      if(idx>-1) state.wishlist.splice(idx,1); else state.wishlist.push(id);
+      saveState(); renderCounts(); toast('Wishlist updated');
+    }
+
+    function saveState(){localStorage.setItem('cart',JSON.stringify(state.cart));localStorage.setItem('wishlist',JSON.stringify(state.wishlist));}
+    function renderCounts(){cartCount.textContent = state.cart.reduce((s,i)=>s+i.qty,0);wishCount.textContent = state.wishlist.length;miniSummary.textContent = `${state.cart.reduce((s,i)=>s+i.qty,0)} items — ${currency(cartTotal())}`}
+
+    function cartTotal(){return state.cart.reduce((s,i)=>{const p=products.find(x=>x.id===i.id);return s + (p? p.price * i.qty : 0)},0)}
+
+    function renderCart(){
+      renderCounts();
+      const drawer = document.getElementById('cartDrawer');
+      if(state.cart.length===0){drawer.innerHTML='<div style="text-align:center;opacity:.8">Cart is empty</div>';return}
+      drawer.innerHTML='';
+      state.cart.forEach(ci=>{
+        const p = products.find(x=>x.id===ci.id);
+        const div = document.createElement('div');div.className='cart-item';
+        div.innerHTML = `
+          <img src='${p.img}' style='width:64px;height:64px;object-fit:cover;border-radius:8px'>
+          <div style='flex:1'>
+            <div><strong>${p.title}</strong></div>
+            <div class='muted small'>${currency(p.price)}</div>
+            <div class='qty' style='margin-top:6px'>
+              <button class='ghost dec' data-id='${p.id}'>-</button>
+              <div>${ci.qty}</div>
+              <button class='ghost inc' data-id='${p.id}'>+</button>
+            </div>
+          </div>
+          <div style='text-align:right'>
+            <div>${currency(p.price * ci.qty)}</div>
+            <div style='margin-top:6px'><button class='ghost remove' data-id='${p.id}'>Remove</button></div>
+          </div>
+        `;
+        drawer.appendChild(div);
+      });
+      const tot = document.createElement('div');tot.style.marginTop='8px';tot.innerHTML=`<div style='display:flex;justify-content:space-between;align-items:center'><strong>Total</strong><strong>${currency(cartTotal())}</strong></div><div style='margin-top:8px;display:flex;gap:8px'><button id='toCheckout'>Proceed to Checkout</button><button id='clearCart' class='ghost'>Clear</button></div>`;
+      drawer.appendChild(tot);
+
+      drawer.querySelectorAll('.inc').forEach(b=>b.onclick=e=>{const id=+e.target.dataset.id;state.cart.find(x=>x.id===id).qty++;saveState();renderCart();});
+      drawer.querySelectorAll('.dec').forEach(b=>b.onclick=e=>{const id=+e.target.dataset.id;const it=state.cart.find(x=>x.id===id);if(it.qty>1) it.qty--; else state.cart=state.cart.filter(x=>x.id!==id);saveState();renderCart();});
+      drawer.querySelectorAll('.remove').forEach(b=>b.onclick=e=>{const id=+e.target.dataset.id;state.cart=state.cart.filter(x=>x.id!==id);saveState();renderCart();});
+      drawer.querySelector('#clearCart').onclick = ()=>{state.cart=[];saveState();renderCart();};
+      drawer.querySelector('#toCheckout').onclick = ()=>openCheckout();
+    }
+
+    function openCart(){const drawer=document.getElementById('cartDrawer');drawer.style.display='block';gsap.from(drawer,{x:80,opacity:0,duration:0.35});renderCart();}
+
+    // search & filters
+    document.getElementById('search').addEventListener('input',applyFilters);
+    document.getElementById('filter').addEventListener('change',applyFilters);
+    document.getElementById('sort').addEventListener('change',applyFilters);
+
+    function applyFilters(){
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const cat = document.getElementById('filter').value;
+      let list = products.filter(p=> (p.title.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)) );
+      if(cat!=='all') list = list.filter(p=>p.category===cat);
+      const sort = document.getElementById('sort').value;
+      if(sort==='price-asc') list.sort((a,b)=>a.price-b.price);
+      if(sort==='price-desc') list.sort((a,b)=>b.price-a.price);
+      if(sort==='newest') list = list.slice().reverse();
+      renderProducts(list);
+    }
+
+    // wishlist view
+    document.getElementById('wishlistBtn').onclick = ()=>{
+      const ids = state.wishlist;
+      if(ids.length===0){toast('Wishlist empty');return}
+      const list = products.filter(p=>ids.includes(p.id));
+      renderProducts(list);
+      window.scrollTo({top:document.getElementById('productGrid').offsetTop-20,behavior:'smooth'});
+    }
+
+    // checkout flow (mock)
+    function openCheckout(){
+      const overlay = document.getElementById('checkoutOverlay');overlay.style.display='flex';
+      overlay.innerHTML = `
+        <div class='modal'>
+          <div style='grid-column:1/-1'>
+            <h2>Checkout — Payment</h2>
+            <div class='muted small'>This is a demo. No real payments are processed.</div>
+          </div>
+          <div>
+            <h3>Shipping</h3>
+            <input id='name' placeholder='Full name' style='width:100%;padding:8px;margin-top:6px;border-radius:8px;border:0'>
+            <input id='addr' placeholder='Address' style='width:100%;padding:8px;margin-top:6px;border-radius:8px;border:0'>
+            <input id='pin' placeholder='PIN / ZIP' style='width:100%;padding:8px;margin-top:6px;border-radius:8px;border:0'>
+          </div>
+          <div>
+            <h3>Payment</h3>
+            <select id='pay'>
+              <option>UPI</option>
+              <option>Card</option>
+              <option>Cash on Delivery</option>
+            </select>
+            <div style='margin-top:12px'><button id='placeOrder'>Place Order</button> <button id='cancelCheckout' class='ghost'>Cancel</button></div>
+          </div>
+          <div style='grid-column:1/-1'>
+            <h4>Order Summary</h4>
+            <div id='summaryList' class='muted'></div>
+          </div>
+        </div>
+      `;
+
+      // populate summary
+      const summaryList = overlay.querySelector('#summaryList');
+      state.cart.forEach(ci=>{const p=products.find(x=>x.id===ci.id);const div=document.createElement('div');div.innerHTML=`${ci.qty} x ${p.title} — ${currency(p.price*ci.qty)}`;summaryList.appendChild(div)});
+      const tot = document.createElement('div');tot.style.marginTop='8px';tot.innerHTML=`<strong>Total: ${currency(cartTotal())}</strong>`;summaryList.appendChild(tot);
+
+      overlay.querySelector('#cancelCheckout').onclick = ()=>overlay.style.display='none';
+      overlay.querySelector('#placeOrder').onclick = ()=>{
+        // simple validation
+        const name=overlay.querySelector('#name').value.trim();
+        const addr=overlay.querySelector('#addr').value.trim();
+        if(!name||!addr){toast('Enter shipping details');return}
+        // place order (mock)
+        state.cart = [];
+        saveState(); renderCart(); overlay.style.display='none'; toast('Order placed — Thank you!');
+      }
+
+      gsap.from('.modal',{y:20,opacity:0,duration:0.4});
+    }
+
+    // small toast
+    function toast(msg){
+      const t = document.createElement('div');t.textContent=msg; t.style.position='fixed';t.style.bottom='20px';t.style.left='50%';t.style.transform='translateX(-50%)';t.style.background='rgba(255,255,255,.06)';t.style.padding='10px 14px';t.style.borderRadius='8px';t.style.zIndex=2000;document.body.appendChild(t);gsap.from(t,{y:10,opacity:0,duration:0.25});setTimeout(()=>gsap.to(t,{opacity:0,y:10,duration:.3,onComplete:()=>t.remove()}),1800);
+    }
+
+    // small helpers
+    document.getElementById('cartBtn').onclick = ()=>openCart();
+    document.getElementById('checkoutBtn').onclick = ()=>openCheckout();
+
+    // initialise
+    applyFilters(); renderCounts();
+
+    // accessibility: close overlays when clicked outside
+    document.getElementById('productOverlay').addEventListener('click', (e)=>{if(e.target.id==='productOverlay') e.target.style.display='none'})
+    document.getElementById('checkoutOverlay').addEventListener('click', (e)=>{if(e.target.id==='checkoutOverlay') e.target.style.display='none'})
+
+    // simulate small entrance animation
+    gsap.from('header .logo', {scale:0.8,opacity:0,duration:0.4});
+  </script>
+</body>
+</html>
